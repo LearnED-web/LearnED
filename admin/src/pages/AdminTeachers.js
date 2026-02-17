@@ -226,44 +226,28 @@ const AdminTeachers = () => {
     }
 
     try {
-      // First, unassign teacher from all classrooms
-      const { error: unassignError } = await supabase
-        .from('classrooms')
-        .update({ teacher_id: null, updated_at: new Date().toISOString() })
-        .eq('teacher_id', teacherId);
+      // Call the database function that handles ALL cleanup in one transaction:
+      // classrooms (unassign), teacher_documents, teacher_verification,
+      // learning_materials, assignment_questions, assignments,
+      // student_assignment_attempts, system_notifications, teacher_invitations,
+      // teachers, audit_logs, admin_activities, users, and auth.users
+      const { data, error } = await supabase.rpc('admin_delete_teacher_account', {
+        p_teacher_id: teacherId
+      });
 
-      if (unassignError) {
-        console.error('Unassign error:', unassignError);
-        alert('Failed to unassign teacher from classrooms: ' + unassignError.message);
-        return;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
       }
 
-      // Delete the teacher record
-      const { error: teacherError } = await supabase
-        .from('teachers')
-        .delete()
-        .eq('id', teacherId);
-
-      if (teacherError) {
-        console.error('Teacher delete error:', teacherError);
-        throw teacherError;
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to delete teacher');
       }
 
-      // Delete the associated user record (teachers table should have ON DELETE CASCADE)
-      const teacher = teachers.find(t => t.id === teacherId);
-      if (teacher && teacher.user_id) {
-        const { error: userError } = await supabase
-          .from('users')
-          .delete()
-          .eq('id', teacher.user_id);
+      console.log('✅ Teacher deleted:', data.deleted_teacher);
+      console.log('📋 Cleaned up tables:', data.deleted_from_tables);
 
-        if (userError) {
-          console.warn('User deletion warning:', userError.message);
-          // Don't fail the whole operation if user deletion fails due to cascade
-        }
-      }
-
-      alert('Teacher deleted successfully!');
+      alert('Teacher deleted successfully! All records have been cleaned up.');
       await refreshData();
     } catch (error) {
       console.error('Delete teacher failed:', error);
@@ -415,45 +399,44 @@ const AdminTeachers = () => {
 
       console.log('✅ Invitation created:', invitationResult);
 
-      // Step 2: Send magic link email using Supabase Auth (automatically sends email)
-      console.log('📧 Sending magic link email...');
-      // Use production URL as default, can be overridden by environment variable
+      // Step 2: Send invite email via server-side API
+      // Uses Supabase Admin API (inviteUserByEmail) which sends the "Invite User" email template
+      // This template has {{ .ConfirmationURL }} = a clickable magic link, NOT an OTP code
+      console.log('📧 Sending teacher invite email via API...');
       const frontendUrl = process.env.REACT_APP_FRONTEND_URL || 'https://learnedtech.in';
       const redirectUrl = `${frontendUrl}/teacher/onboard`;
       console.log('📍 Redirect URL:', redirectUrl);
-      console.log('📦 Email data:', {
-        email: invitationData.email,
-        metadata: {
-          user_type: 'teacher',
-          first_name: invitationData.first_name,
-          last_name: invitationData.last_name,
-          invitation_id: invitationResult.invitation_id
-        }
-      });
+
+      // Get admin's access token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
       
-      const { data: otpData, error: emailError } = await supabase.auth.signInWithOtp({
-        email: invitationData.email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: redirectUrl,
-          data: {
+      const response = await fetch('/api/invite-teacher', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          email: invitationData.email,
+          redirectTo: redirectUrl,
+          userData: {
             user_type: 'teacher',
             first_name: invitationData.first_name,
             last_name: invitationData.last_name,
             invitation_id: invitationResult.invitation_id
           }
-        }
+        })
       });
-      
-      console.log('📬 OTP Response:', otpData);
-      console.log('❓ OTP Error:', emailError);
 
-      if (emailError) {
-        console.error('❌ Email sending error:', emailError);
-        alert('Invitation created but email failed to send: ' + emailError.message + '\n\nThe teacher can still complete onboarding by visiting the teacher onboarding page and entering their email.');
+      const result = await response.json();
+      console.log('📬 Invite API Response:', result);
+
+      if (!response.ok) {
+        console.error('❌ Email sending error:', result.error);
+        alert('Invitation created but email failed to send: ' + result.error + '\n\nThe teacher can still complete onboarding by visiting the teacher onboarding page and entering their email.');
       } else {
-        console.log('✅ Magic link email sent successfully');
-        alert('Teacher invitation sent successfully! They will receive an email with a magic link to complete their profile.');
+        console.log('✅ Teacher invite email sent successfully');
+        alert('Teacher invitation sent successfully! They will receive an email with a link to complete their profile.');
       }
 
       setShowInviteModal(false);

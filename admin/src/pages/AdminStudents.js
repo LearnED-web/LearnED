@@ -11,6 +11,7 @@ const AdminStudents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [gradeFilter, setGradeFilter] = useState('');
   const [boardFilter, setBoardFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [paymentPlans, setPaymentPlans] = useState([]);
@@ -105,6 +106,33 @@ const AdminStudents = () => {
     }
   };
 
+  const deleteStudentAccount = async (student) => {
+    const confirmMessage = `⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to permanently delete:\n\nStudent: ${student.student_name}\nEmail: ${student.email}\nID: ${student.student_identifier}\n\nThis will remove:\n- All enrollments\n- All payment records\n- All attendance records\n- All assignment attempts\n- All progress data\n- The user account from authentication\n\nThis action CANNOT be undone!\n\nType "DELETE" to confirm:`;
+    
+    const userInput = window.prompt(confirmMessage);
+    
+    if (userInput !== 'DELETE') {
+      if (userInput !== null) {
+        alert('Deletion cancelled. You must type "DELETE" exactly to confirm.');
+      }
+      return;
+    }
+    
+    const { data, error } = await supabase.rpc('admin_delete_student_account', {
+      p_student_id: student.student_id
+    });
+    
+    if (error) {
+      console.error('Error deleting student:', error);
+      alert('Failed to delete student account: ' + error.message);
+    } else if (data.success) {
+      alert(`✅ ${data.message}\n\nDeleted: ${data.deleted_student.name} (${data.deleted_student.email})`);
+      await refreshData();
+    } else {
+      alert('Failed to delete: ' + data.error);
+    }
+  };
+
   const openEnrollModal = (student) => {
     setSelectedStudent(student);
     setShowEnrollModal(true);
@@ -148,8 +176,15 @@ const AdminStudents = () => {
     const boardMatch = boardFilter === '' || 
       student.board === boardFilter;
     
-    return searchMatch && gradeMatch && boardMatch;
+    const statusMatch = statusFilter === '' || 
+      student.student_status === statusFilter;
+    
+    return searchMatch && gradeMatch && boardMatch && statusMatch;
   });
+
+  // Count students by status
+  const activeCount = studentsData.filter(s => s.student_status === 'active').length;
+  const inactiveCount = studentsData.filter(s => s.student_status === 'inactive').length;
 
   const handleLogout = async () => {
     await logout();
@@ -257,6 +292,40 @@ const AdminStudents = () => {
                   <option value="IGCSE">IGCSE</option>
                 </select>
               </div>
+
+              {/* Status Filter Buttons */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setStatusFilter('active')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    statusFilter === 'active'
+                      ? 'bg-green-100 text-green-800 border-2 border-green-500'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Active ({activeCount})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('inactive')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    statusFilter === 'inactive'
+                      ? 'bg-red-100 text-red-800 border-2 border-red-500'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Inactive ({inactiveCount})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    statusFilter === ''
+                      ? 'bg-blue-100 text-blue-800 border-2 border-blue-500'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All
+                </button>
+              </div>
             </div>
 
             {/* Students Table */}
@@ -290,6 +359,9 @@ const AdminStudents = () => {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Delete
                       </th>
                     </tr>
                   </thead>
@@ -386,11 +458,20 @@ const AdminStudents = () => {
                               <option value="inactive">Inactive</option>
                             </select>
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <button
+                              onClick={() => deleteStudentAccount(student)}
+                              className="px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-xs font-medium transition-colors"
+                              title="Permanently delete this student account"
+                            >
+                              🗑️ Delete Account
+                            </button>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
+                        <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
                           No students found
                         </td>
                       </tr>

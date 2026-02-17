@@ -337,34 +337,45 @@ const ClassroomList = () => {
 
       console.log('Invitation created:', invitationResult);
 
-      // Step 2: Send magic link email using Supabase Auth (automatically sends email)
-      console.log('Sending magic link email...');
-      // Use production URL as default, can be overridden by environment variable
+      // Step 2: Send invite email via server-side API
+      // Uses Supabase Admin API (inviteUserByEmail) which sends the "Invite User" email template
+      // This template has {{ .ConfirmationURL }} = a clickable magic link, NOT an OTP code
+      console.log('Sending teacher invite email via API...');
       const frontendUrl = process.env.REACT_APP_FRONTEND_URL || 'https://learnedtech.in';
       const redirectUrl = `${frontendUrl}/teacher/onboard`;
       console.log('Redirect URL:', redirectUrl);
+
+      // Get admin's access token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
       
-      const { error: emailError } = await supabase.auth.signInWithOtp({
-        email: invitationData.email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: redirectUrl,
-          data: {
+      const response = await fetch('/api/invite-teacher', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          email: invitationData.email,
+          redirectTo: redirectUrl,
+          userData: {
             user_type: 'teacher',
             first_name: invitationData.firstName,
             last_name: invitationData.lastName,
             invitation_id: invitationResult.invitation_id
           }
-        }
+        })
       });
 
-      if (emailError) {
-        console.error('Email sending error:', emailError);
-        alert('Invitation created but email failed to send: ' + emailError.message + '\n\nThe teacher can still complete onboarding by visiting the teacher onboarding page.');
+      const result = await response.json();
+      console.log('Invite API Response:', result);
+
+      if (!response.ok) {
+        console.error('Email sending error:', result.error);
+        alert('Invitation created but email failed to send: ' + result.error + '\n\nThe teacher can still complete onboarding by visiting the teacher onboarding page.');
         // Don't return here - we still want to close the modal and refresh
       } else {
-        console.log('Magic link email sent successfully');
-        alert('Teacher invitation sent successfully! They will receive an email with a magic link to complete their profile.');
+        console.log('Teacher invite email sent successfully');
+        alert('Teacher invitation sent successfully! They will receive an email with a link to complete their profile.');
       }
 
       setShowInviteModal(false);
