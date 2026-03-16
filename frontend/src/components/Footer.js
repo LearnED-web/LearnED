@@ -191,7 +191,7 @@ const Footer = () => {
               © {currentYear} LearnED. All rights reserved. Transforming education, one student at a time.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm">
-              <a href="#" className="text-gray-400 hover:text-red-400 transition-colors">Privacy Policy</a>
+              <Link to="/privacy-policy" className="text-gray-400 hover:text-red-400 transition-colors">Privacy Policy</Link>
               <a href="#" className="text-gray-400 hover:text-red-400 transition-colors">Terms of Service</a>
               <Link to="/refund-policy" className="text-gray-400 hover:text-red-400 transition-colors">Refund Policy</Link>
             </div>

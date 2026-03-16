@@ -14,6 +14,7 @@ const Team = lazy(() => import('./pages/Team'));
 const Academics = lazy(() => import('./pages/Academics'));
 const Contact = lazy(() => import('./pages/Contact'));
 const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminClassrooms = lazy(() => import('./pages/AdminClassrooms'));
 const AdminTeachers = lazy(() => import('./pages/AdminTeachers'));
@@ -54,6 +55,7 @@ function AppContent() {
             <Route path="/academics" element={<Academics />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/teacher/onboard" element={<TeacherOnboarding />} />
             
             {/* Admin Routes - Wrapped in AuthProvider */}
