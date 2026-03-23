@@ -64,7 +64,7 @@ const Contact = () => {
     {
       icon: Mail,
       title: "Email",
-      details: ["learned.edtech@gmail.com"],
+      details: ["support@learnedtech.in"],
       description: "Send us your queries anytime"
     },
     {

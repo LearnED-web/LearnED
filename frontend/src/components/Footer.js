@@ -145,10 +145,10 @@ const Footer = () => {
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-red-500 flex-shrink-0" />
                 <a 
-                  href="mailto:learned.edtech@gmail.com" 
+                  href="mailto:support@learnedtech.in" 
                   className="text-gray-300 hover:text-red-400 transition-colors text-sm"
                 >
-                  learned.edtech@gmail.com
+                  support@learnedtech.in
                 </a>
               </div>
             </div>
@@ -192,8 +192,9 @@ const Footer = () => {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm">
               <Link to="/privacy-policy" className="text-gray-400 hover:text-red-400 transition-colors">Privacy Policy</Link>
-              <a href="#" className="text-gray-400 hover:text-red-400 transition-colors">Terms of Service</a>
+              <Link to="/terms-of-service" className="text-gray-400 hover:text-red-400 transition-colors">Terms of Service</Link>
               <Link to="/refund-policy" className="text-gray-400 hover:text-red-400 transition-colors">Refund Policy</Link>
+              <Link to="/delete-account" className="text-gray-400 hover:text-red-400 transition-colors">Delete Account</Link>
             </div>
           </div>
         </div>

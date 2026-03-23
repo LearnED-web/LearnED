@@ -123,7 +123,7 @@ const RefundPolicy = () => {
               <ol className='space-y-4 text-gray-700'>
                 <li className='flex items-start'>
                   <span className='bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0'>1</span>
-                  <div><strong>Contact our support team</strong> at support@learned.education or call us at +91-XXXX-XXXX-XX</div>
+                  <div><strong>Contact our support team</strong> at support@learnedtech.in or call us at +91-XXXX-XXXX-XX</div>
                 </li>
                 <li className='flex items-start'>
                   <span className='bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0'>2</span>
@@ -177,7 +177,7 @@ const RefundPolicy = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:support@learned.education"
+                href="mailto:support@learnedtech.in"
                 className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
               >
                 Email Support

@@ -382,26 +382,6 @@ const AdminTeachers = () => {
         return;
       }
 
-      console.log('📤 Calling create_teacher_invitation RPC...');
-      const { data: invitationResult, error } = await supabase.rpc('create_teacher_invitation', {
-        p_email: invitationData.email,
-        p_first_name: invitationData.first_name,
-        p_last_name: invitationData.last_name,
-        p_subject: invitationData.subject || null,
-        p_grade_levels: gradeLevels.length > 0 ? gradeLevels : null,
-        p_admin_id: user.id
-      });
-
-      if (error) {
-        console.error('❌ RPC Error:', error);
-        throw error;
-      }
-
-      console.log('✅ Invitation created:', invitationResult);
-
-      // Step 2: Send invite email via server-side API
-      // Uses Supabase Admin API (inviteUserByEmail) which sends the "Invite User" email template
-      // This template has {{ .ConfirmationURL }} = a clickable magic link, NOT an OTP code
       console.log('📧 Sending teacher invite email via API...');
       const frontendUrl = process.env.REACT_APP_FRONTEND_URL || 'https://learnedtech.in';
       const redirectUrl = `${frontendUrl}/teacher/onboard`;
@@ -409,33 +389,71 @@ const AdminTeachers = () => {
 
       // Get admin's access token for authentication
       const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch('/api/invite-teacher', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          email: invitationData.email,
-          redirectTo: redirectUrl,
-          userData: {
-            user_type: 'teacher',
-            first_name: invitationData.first_name,
-            last_name: invitationData.last_name,
-            invitation_id: invitationResult.invitation_id
-          }
-        })
-      });
+      if (!session?.access_token) {
+        alert('Admin session expired. Please login again.');
+        return;
+      }
 
-      const result = await response.json();
+      const sendInvite = async (reinvite = false) => {
+        const response = await fetch('/api/invite-teacher', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            email: invitationData.email.trim(),
+            redirectTo: redirectUrl,
+            reinvite,
+            invitationData: {
+              first_name: invitationData.first_name.trim(),
+              last_name: invitationData.last_name.trim(),
+              subject: invitationData.subject?.trim() || null,
+              grade_levels: gradeLevels.length > 0 ? gradeLevels : null,
+            },
+            userData: {
+              user_type: 'teacher',
+              first_name: invitationData.first_name.trim(),
+              last_name: invitationData.last_name.trim(),
+            }
+          })
+        });
+
+        const result = await response.json();
+        return { response, result };
+      };
+
+      let { response, result } = await sendInvite(false);
       console.log('📬 Invite API Response:', result);
 
+      if (!response.ok && result?.errorCode === 'INVITATION_EXISTS' && result?.canReinvite) {
+        const shouldReinvite = window.confirm('An invitation already exists for this email. Do you want to re-invite and send a fresh link?');
+        if (!shouldReinvite) {
+          return;
+        }
+
+        ({ response, result } = await sendInvite(true));
+      }
+
       if (!response.ok) {
-        console.error('❌ Email sending error:', result.error);
-        alert('Invitation created but email failed to send: ' + result.error + '\n\nThe teacher can still complete onboarding by visiting the teacher onboarding page and entering their email.');
+        if (result?.errorCode === 'STUDENT_EMAIL_CONFLICT') {
+          alert('This email is already used by a student. Please use another email.');
+          return;
+        }
+
+        if (result?.errorCode === 'ALREADY_TEACHER' || result?.errorCode === 'INVITATION_ALREADY_ACCEPTED') {
+          alert('This email already belongs to a teacher.');
+          return;
+        }
+
+        console.error('❌ Invite error:', result.error);
+        alert('Failed to send invitation: ' + (result.error || 'Unknown error'));
+        return;
+      }
+
+      if (result?.inviteType === 'resent') {
+        alert('Teacher re-invitation sent successfully! A fresh invite link has been emailed.');
       } else {
-        console.log('✅ Teacher invite email sent successfully');
         alert('Teacher invitation sent successfully! They will receive an email with a link to complete their profile.');
       }
 

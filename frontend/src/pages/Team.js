@@ -78,7 +78,7 @@ const Team = () => {
       name: "Pavan Deekshith",
       role: "Full Stack Developer",
       description: "Pavan is a passionate developer who brings ideas to life through clean, efficient code. He specializes in building intuitive user experiences and robust backend systems that power the LearnED platform.",
-      image: "/Deekshith.jpeg"
+      image: null
     },
     {
       name: "Raghavpravin KS",
