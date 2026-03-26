@@ -170,8 +170,11 @@ const PrivacyPolicy = () => {
     if (!current || !next) return true;
     if (current.endsWith(':')) return true;
     if (current.startsWith('•') || next.startsWith('•')) return true;
-    if (/^\d+[.)]/.test(current) || /^\d+[.)]/.test(next)) return true;
-    if (/^\d+\.\d+/.test(current) || /^\d+\.\d+/.test(next)) return true;
+    
+    // Only keep break if the NEXT line starts a new point
+    if (/^\d+[.)]/.test(next)) return true;
+    if (/^\d+\.\d+/.test(next)) return true;
+    
     if (/^[A-Z][A-Z\s/&-]{3,}$/.test(next)) return true;
 
     return false;
