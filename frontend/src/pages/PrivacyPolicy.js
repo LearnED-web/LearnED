@@ -28,8 +28,7 @@ information collected by Us is of the following nature:
 • College/ Institution Details and location 
 • User uploaded photo and IDs 
 • Demographic information such as postcode, preferences and interests 
-• Any other personal information which you give us in connection while booking a 
-service or is relevant to customer surveys and/or offers. 
+• Any other personal information which you give us in connection while booking a service or is relevant to customer surveys and/or offers. 
 1.2 Information provided during Registration to create a profile and use this Website and 
 services, you may be asked to provide the following information: your name, your 
 username, password, email address, the speciality in which you practice or intend to 
@@ -42,17 +41,16 @@ information elements are referred to collectively as your "Personal User Informa
 We collect and hold this information for the purpose of administering your use of the 
 Application. 
 1.4 You are solely responsible for 
-1. maintaining the strict confidentiality of your Personal User Information 
-2. not allowing another person to use your Personal User Information to access the 
+1. Maintaining the strict confidentiality of your Personal User Information 
+2. Not allowing another person to use your Personal User Information to access the 
 Services 
-3. any and all damages or losses that may be incurred or suffered as a result of any 
+3. Any and all damages or losses that may be incurred or suffered as a result of any 
 activities that occur in your Account 
-4. ensuring that the information submitted by you complies with our terms and 
+4. Ensuring that the information submitted by you complies with our terms and 
 conditions 
-5. ensuring that the information provided by you is correct and updated from time to 
+5. Ensuring that the information provided by you is correct and updated from time to 
 time. 
-1.5 You agree to immediately notify LearnED in writing by email 
-to support@learnedtech.in of any unauthorized use of your Personal User Information 
+1.5 You agree to immediately notify LearnED in writing by email to support@learnedtech.in of any unauthorized use of your Personal User Information 
 or any other breach of security. LearnED is not and shall not be liable for any harm 
 arising from or relating to the theft of your Personal User Information that is under Your 
 control, your disclosure of your Personal User Information, or the use of your Personal 

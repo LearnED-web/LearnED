@@ -57,6 +57,12 @@ module.exports = async function handler(req, res) {
       persistSession: false,
     },
   });
+  const anonSupabase = createClient(supabaseUrl, anonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 
   // Verify the JWT and get the calling user
   const {
@@ -159,13 +165,6 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to check existing invitation' });
   }
 
-  if (existingInvitation?.id && existingInvitation.status === 'accepted') {
-    return res.status(409).json({
-      errorCode: 'INVITATION_ALREADY_ACCEPTED',
-      error: 'This teacher invitation is already accepted.',
-    });
-  }
-
   if (existingInvitation?.id && !reinvite) {
     return res.status(409).json({
       errorCode: 'INVITATION_EXISTS',
@@ -256,6 +255,43 @@ module.exports = async function handler(req, res) {
     );
 
     if (error) {
+      const message = (error.message || '').toLowerCase();
+      const userAlreadyExists =
+        message.includes('already been registered') ||
+        message.includes('already registered') ||
+        message.includes('already exists');
+
+      // User already exists in auth (accepted old invite), so send a fresh magic link instead.
+      if (userAlreadyExists) {
+        const { error: otpError } = await anonSupabase.auth.signInWithOtp({
+          email: normalizedEmail,
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: redirectTo || 'https://learnedtech.in/teacher/onboard',
+            data: {
+              ...(userData || {}),
+              user_type: 'teacher',
+              first_name: firstName,
+              last_name: lastName,
+              invitation_id: invitationId,
+            },
+          },
+        });
+
+        if (otpError) {
+          console.error('Magic link resend error:', otpError);
+          return res.status(400).json({ error: otpError.message });
+        }
+
+        console.log('Teacher magic-link resent to existing auth user:', normalizedEmail, 'type:', inviteType);
+        return res.status(200).json({
+          success: true,
+          inviteType,
+          invitation_id: invitationId,
+          data: { resentVia: 'magiclink' },
+        });
+      }
+
       console.error('Supabase invite error:', error);
       return res.status(400).json({ error: error.message });
     }

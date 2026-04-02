@@ -25,6 +25,15 @@ const TeacherOnboarding = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
+    const parseHashParams = (hash) => {
+        const rawHash = hash && hash.startsWith('#') ? hash.slice(1) : hash;
+        const params = new URLSearchParams(rawHash || '');
+        return {
+            access_token: params.get('access_token'),
+            refresh_token: params.get('refresh_token'),
+        };
+    };
+
     useEffect(() => {
         console.log('🔍 TeacherOnboarding mounted');
         console.log('📍 Current URL:', window.location.href);
@@ -115,6 +124,35 @@ const TeacherOnboarding = () => {
         // Handle the case where the user is already signed in when the component mounts
         const checkSession = async () => {
             console.log('🔍 Checking existing session...');
+
+            // Some mobile clients land with a code param (PKCE callback), so exchange it first.
+            const searchParams = new URLSearchParams(window.location.search);
+            const authCode = searchParams.get('code');
+            if (authCode) {
+                console.log('🔁 Found auth code, exchanging for session...');
+                const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(authCode);
+                if (exchangeError) {
+                    console.error('❌ Code exchange error:', exchangeError);
+                } else {
+                    console.log('✅ Code exchange successful');
+                }
+            }
+
+            // Fallback for implicit links where some clients don't auto-handle hash tokens.
+            const { access_token, refresh_token } = parseHashParams(window.location.hash);
+            if (access_token && refresh_token) {
+                console.log('🔁 Found hash tokens, setting session explicitly...');
+                const { error: setSessionError } = await supabase.auth.setSession({
+                    access_token,
+                    refresh_token,
+                });
+                if (setSessionError) {
+                    console.error('❌ setSession error:', setSessionError);
+                } else {
+                    console.log('✅ setSession successful from hash tokens');
+                }
+            }
+
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             
             if (sessionError) {
@@ -128,9 +166,18 @@ const TeacherOnboarding = () => {
                 console.log('✅ Existing session found');
                 await handleAuthChange('SIGNED_IN', session);
             } else {
-                console.log('⚠️ No existing session');
-                setError('No authentication found. Please check your email and click the magic link again.');
-                setAuthLoading(false);
+                console.log('⚠️ No existing session, retrying once...');
+                // Give auth a brief moment in slow mobile webviews before final error.
+                setTimeout(async () => {
+                    const { data: { session: retrySession } } = await supabase.auth.getSession();
+                    if (retrySession?.user) {
+                        await handleAuthChange('SIGNED_IN', retrySession);
+                        return;
+                    }
+
+                    setError('No authentication found. Please check your email and click the magic link again.');
+                    setAuthLoading(false);
+                }, 700);
             }
         };
         checkSession();
